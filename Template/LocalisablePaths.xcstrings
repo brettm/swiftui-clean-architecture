@@ -1,0 +1,12 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "item" : {
+      "extractionState" : "manual"
+    },
+    "settings" : {
+      "extractionState" : "manual"
+    }
+  },
+  "version" : "1.0"
+}
