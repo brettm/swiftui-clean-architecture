@@ -14,7 +14,7 @@ final class DeepLinkTests: XCTestCase, AppLinksHandler {
     
     var urlScheme: String = "templateapp"
     
-    @MainActor func item(_ id: UUID) -> Template.Item? {
+    @MainActor func item(_ id: Int) -> Template.Item? {
         return try! self.modelContext.fetch(FetchDescriptor()).first(where: { $0.id == id })
     }
     
@@ -48,10 +48,9 @@ final class DeepLinkTests: XCTestCase, AppLinksHandler {
     @MainActor
     func testCanOpenURL() async throws {
         
-        let uuidString = "be3efd14-b587-48ed-ad41-4bf4ff1797f0"
-        let passUUID = UUID(uuidString: uuidString)!
+        let passID = 999
         
-        testModelContainer.mainContext.insert(Item(id: passUUID))
+        testModelContainer.mainContext.insert(Item(id: passID))
         
         var test = URL(string: "templateapp://api/settings")!
         var result = try await self.handleOpenUrl(url: test )
@@ -89,11 +88,11 @@ final class DeepLinkTests: XCTestCase, AppLinksHandler {
         XCTAssertTrue(router.navigationState.root == AppRoute.none)
         
         // This is a valid link with item that exists in DB
-        test = URL(string: "templateapp://api/item/\(uuidString)")!
+        test = URL(string: "templateapp://api/item/\(passID)")!
         result = try await self.handleOpenUrl(url: test)
         XCTAssertTrue(result)
         XCTAssertTrue(router.navigationState.presentingRoute == .none)
-        XCTAssertTrue(router.navigationState.root == AppRoute.item(Item(id: passUUID)))
+        XCTAssertTrue(router.navigationState.root == AppRoute.item(Item(id: passID)))
         
         // This is a valid link with item that doesn't exist in DB
         test = URL(string: "templateapp://api/item/da4bfd14-b888-48ed-ad41-4bf4ff1766aa")!

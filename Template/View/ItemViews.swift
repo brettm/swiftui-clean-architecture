@@ -26,8 +26,10 @@ struct ItemDetail: View {
 struct ItemRoute: View {
     var item: Item
     var body: some View {
-        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-            .tag(AppRoute.item(item))
+        HStack {
+            Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        }
+        .tag(AppRoute.item(item))
     }
 }
 

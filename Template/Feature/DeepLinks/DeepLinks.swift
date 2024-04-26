@@ -41,7 +41,7 @@ protocol AppUrlHandler {
 }
 
 protocol AppRouteCreator {
-    func route(forPath path: String, id: UUID?) async -> AppRoute
+    func route(forPath path: String, id: Int?) async -> AppRoute
 }
 
 protocol AppRouterProvider {
@@ -52,7 +52,7 @@ import SwiftData
 
 protocol AppLinksHandler: AppUrlHandler, AppRouterProvider, AppRouteCreator {
     var urlScheme: String { get }
-    func item(_ id: UUID) -> Item?
+    func item(_ id: Int) -> Item?
 }
 
 enum AppLinkError: Error {
@@ -76,7 +76,7 @@ extension AppLinksHandler {
             !pathComponents.isEmpty,
             var component = _pathComponents.popLast()
         else { return .none }
-        let id = UUID(uuidString: component)
+        let id = Int(component)
         if id != nil {
             guard let path = _pathComponents.popLast() else {
                 throw AppLinkError.malformedLink
@@ -86,7 +86,7 @@ extension AppLinksHandler {
         return await route(forPath: component, id: id)
     }
     
-    func route(forPath path: String, id: UUID? = nil) async -> AppRoute {
+    func route(forPath path: String, id: Int? = nil) async -> AppRoute {
         if path == String(localized: "item"), let id, let itemDependency = item(id)  {
             return .item(itemDependency)
         }
@@ -107,7 +107,7 @@ struct AppLinksHandlerProvider<Content: View>: View, AppLinksHandler {
     public var urlScheme: String = "templateapp"
     public var content: () -> Content
     
-    @DataRepo<Item> var items
+    @DataModel<Item> var items
     
     var body: some View {
         content()
@@ -120,7 +120,7 @@ struct AppLinksHandlerProvider<Content: View>: View, AppLinksHandler {
             }
     }
     
-    func item(_ id: UUID) -> Item? {
+    func item(_ id: Int) -> Item? {
         items.first(where: { $0.id == id })
     }
 }

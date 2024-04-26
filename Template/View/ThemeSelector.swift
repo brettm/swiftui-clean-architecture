@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+// TODO: Restructure this view
 struct ThemeSelector: View {
     @Environment(\.appTheme) var appTheme
     internal let inspection = Inspection<Self>()

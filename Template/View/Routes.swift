@@ -13,16 +13,19 @@ struct Routes: View {
     let inspection = Inspection<Self>()
     
     @Environment(AppRouter.self) private var router
-    @DataRepo<Item> private var itemRepo
+    
+    @DataModel<Item> private var itemData
+    @Environment(RepoMan.self) var repoMan
     
     var body: some View {
         @Bindable var router = router
         List(selection: $router.navigationState.root) {
-            ForEach(itemRepo) { item in
+            ForEach(itemData) { item in
                 ItemRoute(item: item)
             }
-            .onDelete(perform: deleteItems(offsets:))
+            .onDelete(perform: deleteItems(offsets:) )
         }
+        .animation(.default, value: itemData)
         .toolbar {
 #if os(iOS)
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -31,25 +34,36 @@ struct Routes: View {
             }
 #endif
             ToolbarItem {
-                Button(action: addItem) {
+                Button(action: addItem ) {
                     Label("Add Item", systemImage: "plus")
                 }
                 .accessibilityIdentifier("RoutesAddItem")
             }
         }
         .onReceive(inspection.notice) { self.inspection.visit(self, $0) }
+        .onAppear {
+            self.fetchData()
+        }
     }
     
     private func addItem() {
-        withAnimation {
-            let newItem = Item(id: UUID(), timestamp: Date())
-            _itemRepo.add(newItem)
+        let itemRepo = repoMan.itemsRepo
+        Task {
+            _ = try! await itemRepo.create(Item.new)
         }
     }
 
     private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            _itemRepo.delete(offsets: offsets)
+        let itemRepo = repoMan.itemsRepo
+        for index in offsets {
+            _ = itemRepo.delete(itemData[index])
+        }
+    }
+    
+    private func fetchData() {
+        let itemRepo = repoMan.itemsRepo
+        Task {
+            _ = try! await itemRepo.fetchAll()
         }
     }
 }
