@@ -26,6 +26,7 @@ extension Item {
     static var new: Item {
         Item(id: 0)
     }
+    
     static var preview: Item = {
         var id = 1
         var timestamp = Date(timeIntervalSince1970: 0)
@@ -52,11 +53,12 @@ extension APIItemsResponseItem {
 }
 
 struct ItemRepository: ModelSyncRepository {
-    typealias T = Item
-    typealias C = Predicate<Item>
+    var modelContext: ModelContext
     
-    var client = ItemAPIClient(server: ItemAPIServers.server1)
-    let modelContainer: ModelContainer
+    typealias T = Item
+    typealias Id = Int
+    
+    var client = ItemAPIClient(server: APIServer.server1)
     
     static func translate(apiResponseItem item: APIResponseItem?) -> [Item] {
         if let itemsResponse = item as? APIItemsResponseItem {
@@ -68,29 +70,8 @@ struct ItemRepository: ModelSyncRepository {
         return []
     }
     
-    func read(_ criteria: Predicate<Item>) -> T? {
-        return nil
-    }
-    
-    @discardableResult
-    func fetchAll() async throws -> [T] {
-        let modelContext = ModelContext(self.modelContainer)
-        let response = try await client.fetch(parameters: [])
-        switch response {
-        case .success(let responseBody):
-            let models = Self.translate(apiResponseItem: responseBody)
-            try modelContext.delete(model: Item.self)
-            _ = models.map{ modelContext.insert($0) }
-            try modelContext.save()
-            return models
-        case .failure(let error):
-            throw error
-        }
-    }
-    
     @discardableResult
     func create(_ entity: T) async throws -> T {
-        let modelContext = ModelContext(self.modelContainer)
         let timeStamp = APITimestampRequestItem(integerLiteral: Int(entity.timestamp.timeIntervalSince1970))
         let request: APIRequest = .init( timeStamp )
         let response = try await client.create(request)
@@ -113,11 +94,70 @@ struct ItemRepository: ModelSyncRepository {
     }
     
     @discardableResult
-    func delete(_ entity: T) -> T? {
-        let modelContext = ModelContext(self.modelContainer)
-//        modelContext.delete
-        // TODO: Delete with ID
-        try! modelContext.save()
+    func delete(_ entityId: Id) async throws -> T? {
+        guard let entity = try modelContext.fetch(FetchDescriptor<T>(predicate: #Predicate { $0.id == entityId })).first else {
+            return nil
+        }
+        let request: APIRequest = .init( APIItemIdsRequestItem( [entityId] ) )
+        let response = try await client.delete(request)
+        switch response {
+        case .success(_):
+            modelContext.delete(entity)
+            try modelContext.save()
+        case .failure(let error):
+            throw error
+        }
         return nil
     }
 }
+
+struct ItemStore {
+    internal init(modelContainer: ModelContainer, errorHandler: ErrorHandler) {
+        self.modelContainer = modelContainer
+        self.errorHandler = errorHandler
+    }
+    
+    private var modelContainer: ModelContainer
+    private var errorHandler: ErrorHandler
+    private var newBackgroundContext: ModelContext {
+        ModelContext(modelContainer)
+    }
+    
+    func updateAll() {
+        Task.detached(priority: .background) {
+            let itemRepo = ItemRepository(modelContext: newBackgroundContext)
+            _ = try! await itemRepo.fetchAll()
+        }
+    }
+    
+    func addItem(_ item: APIItemRequestItem) {
+        Task.detached(priority: .background) {
+            let itemRepo = ItemRepository(modelContext: newBackgroundContext)
+            do {
+                _ = try await itemRepo.create(Item.new)
+            } catch {
+                await errorHandler.handleError(error: error) {
+                    Task {  @MainActor in
+                        addItem(item)
+                    }
+                }
+            }
+        }
+    }
+    
+    func deleteItem(itemId id: Int) {
+        Task.detached(priority: .background) {
+            let itemRepo = ItemRepository(modelContext: newBackgroundContext)
+            do {
+                _ = try await itemRepo.delete( id )
+            } catch {
+                await errorHandler.handleError(error: error) {
+                    Task {  @MainActor in
+                        deleteItem(itemId: id)
+                    }
+                }
+            }
+        }
+    }
+}
+

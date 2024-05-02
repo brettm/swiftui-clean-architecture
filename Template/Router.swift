@@ -28,7 +28,7 @@ protocol AppRouterInterface {
 
 @Observable
 class AppRouter: AppRouterInterface {
-    
+
     var navigationState = AppNavigationState()
     
     func navigateToRoute(_ route: AppRoute) {

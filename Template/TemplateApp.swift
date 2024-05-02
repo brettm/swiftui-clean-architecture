@@ -22,6 +22,7 @@ import SwiftUI
 // use of .inspector modifier
 // error handling https://developer.apple.com/tutorials/app-dev-training/handling-errors
 // networking
+// Async button
 
 import SwiftData
 
@@ -39,31 +40,25 @@ enum ModelContainerFactory {
     }
 }
 
-@Observable
-open class RepoMan {
-    let modelContainer: ModelContainer
-    init(modelContainer: ModelContainer) {
-        self.modelContainer = modelContainer
-    }
-}
-
-extension RepoMan {
-    var itemsRepo: ItemRepository {
-        ItemRepository(modelContainer: modelContainer)
-    }
-}
+//@Observable
+//open class RepoMan {
+//    let modelContainer: ModelContainer
+//    init(modelContainer: ModelContainer) {
+//        self.modelContainer = modelContainer
+//    }
+//}
 
 @main
 struct TemplateApp: App {
-    var modelContainer = ModelContainerFactory.createContainer()
     var body: some Scene {
         WindowGroup {
-            AppStateContainer() {
+            AppStateContainer {
                 Navigator(sideBar: Routes())
             }
-            .modelContainer(modelContainer)
-            .environment(RepoMan(modelContainer: modelContainer))
+            
+//            .environment(RepoMan(modelContainer: modelContainer))
             .foregroundStyle(AppForegroundStyle())
+            
         }
     }
 }

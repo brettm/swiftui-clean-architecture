@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-private struct ThemeStateContainerModifier: ViewModifier {
+struct ThemeStateContainerModifier: ViewModifier {
     @State private var theme: AppTheme = .default
     func body(content: Content) -> some View {
         content
@@ -16,7 +16,7 @@ private struct ThemeStateContainerModifier: ViewModifier {
     }
 }
 
-private struct RouterStateContainerModifier: ViewModifier {
+struct RouterStateContainerModifier: ViewModifier {
     @State private var router: AppRouter = .init()
     func body(content: Content) -> some View {
         content
@@ -24,26 +24,57 @@ private struct RouterStateContainerModifier: ViewModifier {
     }
 }
 
-private extension View {
+extension View {
     func routerStateContainer() -> some View {
         modifier(RouterStateContainerModifier())
     }
 }
 
-private extension View {
+extension View {
     func themeStateContainer() -> some View {
         modifier(ThemeStateContainerModifier())
     }
 }
 
 struct AppStateContainer<Content: View>: View {
-    @Environment(\.modelContext) var modelContext
+    @State var errorHandler = ErrorHandler()
+    var modelContainer = ModelContainerFactory.createContainer()
     var content: () -> Content
     var body: some View {
         content()
+            .modelContainer(modelContainer)
             .enableFeature(Feature.deepLinks)
             .routerStateContainer()
             .themeStateContainer()
-            
+            .itemStoreContainer(ItemStore(modelContainer: modelContainer, errorHandler: errorHandler))
+            .errorHandler(errorHandler)
+    }
+}
+
+private struct ItemStoreKey: EnvironmentKey {
+    static let defaultValue: ItemStore? = nil
+}
+
+extension EnvironmentValues {
+    var itemStore: ItemStore? {
+        get { self[ItemStoreKey.self] }
+        set { self[ItemStoreKey.self] = newValue }
+    }
+}
+
+struct ItemStoreContainerModifier: ViewModifier {
+    @State private var store: ItemStore
+    init(_ store: ItemStore) {
+        self.store = store
+    }
+    func body(content: Content) -> some View {
+        content
+            .environment(\.itemStore, store)
+    }
+}
+
+private extension View {
+    func itemStoreContainer(_ store: ItemStore) -> some View {
+        modifier(ItemStoreContainerModifier(store))
     }
 }

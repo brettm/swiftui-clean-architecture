@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ItemsAPIClient
 
 struct Routes: View {
    
@@ -15,13 +16,15 @@ struct Routes: View {
     @Environment(AppRouter.self) private var router
     
     @DataModel<Item> private var itemData
-    @Environment(RepoMan.self) var repoMan
+    @Environment(\.itemStore) private var itemStore
+    
+    @State private var selectedRoute: AppRoute?
     
     var body: some View {
-        @Bindable var router = router
-        List(selection: $router.navigationState.root) {
+        List(selection: $selectedRoute) {
             ForEach(itemData) { item in
-                ItemRoute(item: item)
+                ItemRouteView(item: item)
+                    .tag( AppRoute.item(item) )
             }
             .onDelete(perform: deleteItems(offsets:) )
         }
@@ -41,30 +44,18 @@ struct Routes: View {
             }
         }
         .onReceive(inspection.notice) { self.inspection.visit(self, $0) }
-        .onAppear {
-            self.fetchData()
+        .onAppear { itemStore?.updateAll() }
+        .onChange(of: selectedRoute) { _, newValue in
+            if let newValue { router.navigateToRoute(newValue) }
         }
     }
     
     private func addItem() {
-        let itemRepo = repoMan.itemsRepo
-        Task {
-            _ = try! await itemRepo.create(Item.new)
-        }
+        itemStore?.addItem(APIItemRequestItem(id: -1, timestamp: Int(Date().timeIntervalSince1970)))
     }
 
     private func deleteItems(offsets: IndexSet) {
-        let itemRepo = repoMan.itemsRepo
-        for index in offsets {
-            _ = itemRepo.delete(itemData[index])
-        }
-    }
-    
-    private func fetchData() {
-        let itemRepo = repoMan.itemsRepo
-        Task {
-            _ = try! await itemRepo.fetchAll()
-        }
+        _ = offsets.map { itemStore?.deleteItem(itemId: itemData[$0].id) }
     }
 }
 

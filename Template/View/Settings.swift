@@ -14,7 +14,7 @@ struct Settings: View {
         NavigationStack {
             Form {
                 Section(header: Text("Theme")) {
-                    ThemeSelector()
+                    ThemePicker()
                 }
             }
             .formStyle(.grouped)

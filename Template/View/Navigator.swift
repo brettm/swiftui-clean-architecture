@@ -9,11 +9,12 @@ import SwiftUI
 
 struct Navigator<SideBar: View>: View {
     
-    @Environment(AppRouter.self) var router
+    @Environment(AppRouter.self) private var router
     @State private var columnVisibility = NavigationSplitViewVisibility.automatic
     
     internal let inspection = Inspection<Self>()
-    var sideBar: SideBar
+    
+    public var sideBar: SideBar
     
     var body: some View {
         @Bindable var router = router
@@ -39,9 +40,7 @@ struct Navigator<SideBar: View>: View {
                             route.view()
                         }
                 }
-                else {
-                    AppRoute.none.view()
-                }
+                else { AppRoute.none.view() }
             }
         }
 #if os(macOS)

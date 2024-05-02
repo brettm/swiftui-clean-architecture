@@ -25,7 +25,7 @@ final class ThemeTests: XCTestCase {
     @MainActor
     func testThemeSelector() throws {
         let globalTheme = Binding<AppTheme>(wrappedValue: .default)
-        let view = ThemeSelector()
+        let view = ThemePicker()
         let expectation = view.inspection.inspect { view in
             for (idx, theme) in AppTheme.allCases.enumerated() {
                 try view.find(viewWithAccessibilityIdentifier: "ThemeSelection_\(idx)").callOnTapGesture()

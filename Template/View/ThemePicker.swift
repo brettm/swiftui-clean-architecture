@@ -1,13 +1,13 @@
 //
-//  Theme.swift
+//  ThemePicker.swift
 //  Template
 //
-//  Created by Brett Meader on 04/04/2024.
+//  Created by Brett Meader on 01/05/2024.
 //
 
 import SwiftUI
-// TODO: Restructure this view
-struct ThemeSelector: View {
+
+struct ThemePicker: View {
     @Environment(\.appTheme) var appTheme
     internal let inspection = Inspection<Self>()
     var body: some View {
@@ -28,14 +28,13 @@ struct ThemeSelector: View {
                             .padding([.bottom], 20.0)
                             .padding([.leading], 4.0)
                             .foregroundStyle(AppStyleFactory.shapeStyle(theme))
-                            .onTapGesture {
-                                appTheme.wrappedValue = theme
-                            }
+                            .onTapGesture { appTheme.wrappedValue = theme }
                             .accessibilityIdentifier("ThemeSelection_\(idx)")
                     }
                 }
             }
         }
+        .padding(8)
         .onReceive(inspection.notice) { self.inspection.visit(self, $0) }
     }
 }
@@ -66,3 +65,8 @@ struct ThemeSelection: View {
     }
 }
 
+#Preview {
+    ThemePicker()
+        .themeStateContainer()
+        .frame(maxWidth: 320)
+}

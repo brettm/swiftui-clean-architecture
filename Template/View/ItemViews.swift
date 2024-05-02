@@ -17,19 +17,16 @@ struct ItemDetail: View {
                 Text("More Item Functionality -->")
             }
         }
-        .onAppear {
-            print(item.id)
-        }
+        .onAppear { print(item.id) }
     }
 }
 
-struct ItemRoute: View {
+struct ItemRouteView: View {
     var item: Item
     var body: some View {
         HStack {
             Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
         }
-        .tag(AppRoute.item(item))
     }
 }
 
